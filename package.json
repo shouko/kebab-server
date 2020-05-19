@@ -1,0 +1,23 @@
+{
+  "name": "kebab-server",
+  "version": "0.0.1",
+  "main": "app.js",
+  "repository": "git@github.com:shouko/kebab-server.git",
+  "author": "imshouko@gmail.com",
+  "license": "MIT",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "engines": {
+    "node": "12.x"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "node-fetch": "^2.6.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.0.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-import": "^2.20.2"
+  }
+}
