@@ -1,14 +1,20 @@
 /* eslint-disable no-console */
 const http = require('http');
 const fetch = require('node-fetch');
+const mimes = require('mime-types');
+const etag = require('etag');
 const config = require('./config');
 
-const corsHeaders = { 'Access-Control-Allow-Origin': config.allowOrigin };
+const corsHeaders = { 'access-control-allow-origin': config.allowOrigin };
+
+const send = (res, code, msg) => {
+  res.writeHead(code, corsHeaders);
+  res.end(msg || '');
+};
 
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
-    res.writeHead(204, corsHeaders);
-    return res.end();
+    return send(res, 204);
   }
 
   if (req.method === 'POST') {
@@ -52,29 +58,53 @@ const server = http.createServer(async (req, res) => {
       return res.end(resp);
     } catch (e) {
       console.error(e);
-      res.writeHead(400, corsHeaders);
-      return res.end();
+      return send(res, 400);
     }
   }
 
   if (req.method !== 'GET') {
-    res.writeHead(405, corsHeaders);
-    return res.end();
+    return send(res, 405);
   }
 
-  /* TODO: media proxy and cache
+  if (req.url.split('?')[0] === '/') {
+    return send(res, 200, 'Hello World\n');
+  }
 
   if (!req.url.startsWith('/media/')) {
-    res.writeHead(404, corsHeaders);
-    return res.end();
+    return send(res, 404);
   }
 
   const [,, host, ...path] = req.url.split('/');
+  if (!config.mediaUpstreams.some((d) => host.endsWith(d))) {
+    return send(res, 400);
+  }
 
-  */
+  // TODO: cache
+  try {
+    const body = await fetch(`https://${host}/${path.join('/')}`)
+      .then((resp) => resp.blob())
+      .then((blob) => blob.arrayBuffer())
+      .then((abuff) => Buffer.from(abuff, 'binary'));
 
-  res.writeHead(200, corsHeaders);
-  return res.end('Hello World\n');
+    const contentType = mimes.lookup(req.url.split('?')[0]) || 'application/octet-stream';
+
+    res.writeHead(200, {
+      ...corsHeaders,
+      etag: etag(body),
+      'content-type': (() => {
+        if (['image/', 'video/'].some((prefix) => contentType.startsWith(prefix))) {
+          return contentType;
+        }
+        return 'application/octet-stream';
+      })(),
+    });
+    return res.end(body);
+  } catch (e) {
+    console.error(e);
+    send(res, 500);
+  }
+
+  return send(res, 500);
 });
 
 const listener = server.listen(config.porg || 3000, () => {
