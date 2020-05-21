@@ -107,6 +107,6 @@ const server = http.createServer(async (req, res) => {
   return send(res, 500);
 });
 
-const listener = server.listen(config.porg || 3000, () => {
+const listener = server.listen(config.port || 3000, () => {
   console.log(listener.address().port);
 });
